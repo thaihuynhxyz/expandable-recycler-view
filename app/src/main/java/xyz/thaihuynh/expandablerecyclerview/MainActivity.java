@@ -2,6 +2,7 @@ package xyz.thaihuynh.expandablerecyclerview;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         List<String> listDataHeader = new ArrayList<>();
         HashMap<String, List<String>> listDataChild = new HashMap<>();
