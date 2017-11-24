@@ -5,6 +5,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.HashMap;
@@ -67,23 +68,15 @@ class MyAdapter extends BaseExpandableRecyclerAdapter<MyAdapter.GroupViewHolder,
     }
 
     @Override
-    void onBindGroupViewHolder(GroupViewHolder holder, int groupPosition) {
-        ((TextView) holder.itemView).setText((String) getGroup(groupPosition));
+    void onBindGroupViewHolder(GroupViewHolder holder, int groupPosition, boolean isExpanded) {
+        holder.textView.setText((String) getGroup(groupPosition));
+        holder.imageView.setRotation(isExpanded ? 90 : 0);
     }
 
     @Override
     void onBindChildViewHolder(ChildViewHolder holder, int groupPosition, int childPosition) {
         ((TextView) holder.itemView).setText((String) getChild(groupPosition, childPosition));
     }
-//    @Override
-//    View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
-//        return null;
-//    }
-//
-//    @Override
-//    View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
-//        return null;
-//    }
 
     @Override
     boolean isChildSelectable(int groupPosition, int childPosition) {
@@ -92,8 +85,13 @@ class MyAdapter extends BaseExpandableRecyclerAdapter<MyAdapter.GroupViewHolder,
 
     class GroupViewHolder extends RecyclerView.ViewHolder {
 
+        TextView textView;
+        ImageView imageView;
+
         GroupViewHolder(View itemView) {
             super(itemView);
+            textView = itemView.findViewById(R.id.text_view);
+            imageView = itemView.findViewById(R.id.image_view);
         }
     }
 

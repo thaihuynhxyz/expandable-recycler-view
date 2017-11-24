@@ -1,20 +1,64 @@
 package xyz.thaihuynh.expandablerecyclerview;
 
 import android.support.v7.widget.RecyclerView;
+import android.view.View;
 import android.view.ViewGroup;
 
+import java.util.HashMap;
+import java.util.Map;
+
 abstract class BaseExpandableRecyclerAdapter<GVH extends RecyclerView.ViewHolder, CVH extends RecyclerView.ViewHolder> extends RecyclerView.Adapter {
+
+    /**
+     * This data type represents a child position
+     */
+    private final static int CHILD = 1;
+
+    /**
+     * This data type represents a group position
+     */
+    private final static int GROUP = 2;
+
+    private Map<Object, Boolean> mGroupState = new HashMap<>();
 
     @Override
     public int getItemViewType(int position) {
         int count = 0;
-        for (int i = 0; count < position; i++) count += getChildrenCount(i) + 1;
-        return count == position ? 0 : 1;
+        for (int i = 0; count < position; i++) count += (mGroupState.get(getGroup(i)) ? getChildrenCount(i) : 0) + 1;
+        return count == position ? GROUP : CHILD;
     }
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return viewType == 0 ? onCreateGroupViewHolder(parent) : onCreateChildViewHolder(parent);
+        if (viewType == GROUP) {
+            final GVH groupViewHolder = onCreateGroupViewHolder(parent);
+            groupViewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    int groupCount = 0;
+                    int allChildCount = 0;
+                    final int adapterPosition = groupViewHolder.getAdapterPosition();
+                    for (int i = 0; groupCount + allChildCount < adapterPosition; i++) {
+                        groupCount++;
+                        allChildCount += (mGroupState.get(getGroup(i)) ? getChildrenCount(i) : 0);
+                    }
+                    final Object group = getGroup(groupCount);
+                    boolean isExpanded = mGroupState.get(group);
+                    mGroupState.put(group, !isExpanded);
+                    final int childCount = getChildrenCount(groupCount);
+                    if (isExpanded) {
+                        notifyItemChanged(adapterPosition);
+                        notifyItemRangeRemoved(adapterPosition + 1, childCount);
+                    } else {
+                        notifyItemChanged(adapterPosition);
+                        notifyItemRangeInserted(adapterPosition + 1, childCount);
+                    }
+                }
+            });
+            return groupViewHolder;
+        } else {
+            return onCreateChildViewHolder(parent);
+        }
     }
 
     @Override
@@ -23,14 +67,14 @@ abstract class BaseExpandableRecyclerAdapter<GVH extends RecyclerView.ViewHolder
         int childCount = 0;
         for (int i = 0; groupCount + childCount < position; i++) {
             groupCount++;
-            childCount += getChildrenCount(i);
+            childCount += (mGroupState.get(getGroup(i)) ? getChildrenCount(i) : 0);
         }
 
-        if (getItemViewType(position) == 0) {
-            onBindGroupViewHolder((GVH) holder, groupCount);
+        if (getItemViewType(position) == GROUP) {
+            onBindGroupViewHolder((GVH) holder, groupCount, mGroupState.get(getGroup(groupCount)));
         } else {
             int groupPosition = groupCount - 1;
-            int childPosition = position - groupCount - childCount + getChildrenCount(groupPosition);
+            int childPosition = position - groupCount - childCount + (mGroupState.get(getGroup(groupPosition)) ? getChildrenCount(groupPosition) : 0);
             onBindChildViewHolder((CVH) holder, groupPosition, childPosition);
         }
     }
@@ -38,7 +82,14 @@ abstract class BaseExpandableRecyclerAdapter<GVH extends RecyclerView.ViewHolder
     @Override
     public int getItemCount() {
         int count = 0;
-        for (int i = 0; i < getGroupCount(); i++) count += getChildrenCount(i) + 1;
+        final int groupCount = getGroupCount();
+        for (int i = 0; i < groupCount; i++) {
+            Object group = getGroup(i);
+            if (!mGroupState.containsKey(group)) {
+                mGroupState.put(group, false);
+            }
+            count += (mGroupState.get(group) ? getChildrenCount(i) : 0) + 1;
+        }
         return count;
     }
 
@@ -104,7 +155,7 @@ abstract class BaseExpandableRecyclerAdapter<GVH extends RecyclerView.ViewHolder
 
     abstract CVH onCreateChildViewHolder(ViewGroup parent);
 
-    abstract void onBindGroupViewHolder(GVH holder, int groupPosition);
+    abstract void onBindGroupViewHolder(GVH holder, int groupPosition, boolean isExpanded);
 
     abstract void onBindChildViewHolder(CVH holder, int groupPosition, int childPosition);
 
